@@ -49,6 +49,11 @@ env/
 logs/
 *.log
 
+# 运行时上传/生成文件
+uploads/
+backend.bundle
+*.bundle
+
 # 数据库
 *.db
 *.sqlite3
