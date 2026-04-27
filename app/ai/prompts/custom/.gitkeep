@@ -1,0 +1,9 @@
+# 此目录用于存放用户自定义的提示词模板
+# 自定义模板优先级高于 templates 目录中的同名模板
+# 
+# 文件格式：
+# - 使用 .md 格式
+# - 可选 YAML Front Matter 元数据
+#
+# 示例：
+# custom/my_role.md

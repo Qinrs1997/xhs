@@ -1,0 +1,64 @@
+# ============================================================
+# Docker 构建忽略（减少镜像体积 + 避免敏感文件泄漏）
+# ============================================================
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+ENV/
+
+# Git
+.git/
+.gitignore
+
+# IDE / 编辑器
+.idea/
+.vscode/
+.cursor/
+.agents/
+.gemini/
+.ai/
+
+# 日志 / 上传（由卷挂载提供）
+logs/*.log
+logs/*.log.*
+uploads/
+!uploads/.gitkeep
+
+# 备份 / 临时
+*.bak
+*.tmp
+*.swp
+*~
+
+# 敏感文件（避免意外 COPY 进镜像）
+.env
+.env.*
+!.env.example
+
+# 测试 / 文档（生产镜像不需要）
+tests/
+docs/
+scripts/db_tunnel.bat
+scripts/manage.bat
+scripts/manage.sh
+scripts/start.bat
+
+# systemd（宿主机部署时用）
+systemd/
+
+# OS 生成
+.DS_Store
+Thumbs.db

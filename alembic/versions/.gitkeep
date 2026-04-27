@@ -1,0 +1,6 @@
+# Alembic 迁移版本目录
+#
+# 基础框架项目，不保留历史迁移记录。
+# 新项目首次部署时请执行：
+#   alembic revision --autogenerate -m "init"
+#   alembic upgrade head

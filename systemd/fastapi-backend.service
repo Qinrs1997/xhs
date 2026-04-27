@@ -1,0 +1,148 @@
+# ============================================================
+# FastAPI Backend - systemd 服务单元文件
+# ============================================================
+#
+# 安装步骤：
+#   1. 复制到 systemd 目录：
+#      sudo cp fastapi-backend.service /etc/systemd/system/
+#
+#   2. 修改下方的配置变量（搜索 TODO）：
+#      - 项目路径 (WorkingDirectory)
+#      - Conda 环境名 / Python 路径
+#      - 环境变量（数据库密码、SECRET_KEY 等）
+#
+#   3. 重新加载并启动：
+#      sudo systemctl daemon-reload
+#      sudo systemctl enable fastapi-backend    # 开机自启
+#      sudo systemctl start fastapi-backend     # 立即启动
+#
+#   4. 查看状态：
+#      sudo systemctl status fastapi-backend
+#      sudo journalctl -u fastapi-backend -f    # 实时日志
+#
+# 卸载：
+#   sudo systemctl stop fastapi-backend
+#   sudo systemctl disable fastapi-backend
+#   sudo rm /etc/systemd/system/fastapi-backend.service
+#   sudo systemctl daemon-reload
+# ============================================================
+
+[Unit]
+Description=FastAPI Backend Service
+Documentation=https://github.com/your-repo/base_fastapi_ai
+After=network-online.target mysql.service redis.service
+Wants=network-online.target
+# 如有依赖 MySQL，可取消下行注释实现强依赖
+# Requires=mysql.service
+
+[Service]
+# ==================== 用户与权限 ====================
+# TODO: 修改为你的部署用户（强烈建议不要使用 root）
+User=lighthouse
+Group=lighthouse
+
+# ==================== 工作目录 ====================
+# TODO: 修改为你的项目实际路径
+WorkingDirectory=/home/lighthouse/projects/fastapi-backend
+
+# ==================== 环境变量 ====================
+# Python / Conda 环境路径
+# TODO: 修改为你的 Conda 环境路径或 venv 路径
+Environment="PATH=/opt/miniconda3/envs/fastapi_env/bin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONPATH=/home/lighthouse/projects/fastapi-backend"
+Environment="CONDA_PREFIX=/opt/miniconda3/envs/fastapi_env"
+Environment="CONDA_DEFAULT_ENV=fastapi_env"
+
+# 运行环境标识（dev / test / prod）
+Environment="APP_ENV=prod"
+
+# 敏感信息（生产环境必须设置！）
+# TODO: 修改为真实值（或使用 EnvironmentFile 从外部文件加载）
+Environment="SECRET_KEY=your-production-secret-key-here"
+Environment="MYSQL_PASSWORD=your-mysql-password-here"
+# Environment="REDIS_PASSWORD=your-redis-password-here"
+# Environment="AI_API_KEY=sk-your-api-key-here"
+
+# 可选：从外部文件加载环境变量（推荐，更安全）
+# 文件格式：每行一个 KEY=VALUE，不需要引号
+# EnvironmentFile=/home/lighthouse/projects/fastapi-backend/.env.prod
+
+# ==================== 启动前准备 ====================
+# 确保日志目录存在
+ExecStartPre=/bin/mkdir -p /home/lighthouse/projects/fastapi-backend/logs
+# 确保上传目录存在
+ExecStartPre=/bin/mkdir -p /home/lighthouse/projects/fastapi-backend/uploads
+
+# 可选：启动前执行数据库迁移（首次部署时建议手动执行）
+# ExecStartPre=/home/lighthouse/projects/fastapi-backend/scripts/migrate.sh upgrade
+
+# ==================== 启动命令 ====================
+# 使用 Gunicorn + Uvicorn Worker 的生产级部署方式
+# 如果未安装 gunicorn，使用下方的 uvicorn 直启方式
+ExecStart=/opt/miniconda3/envs/fastapi_env/bin/uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port 8999 \
+    --workers 2 \
+    --proxy-headers \
+    --forwarded-allow-ips="*" \
+    --access-log \
+    --log-level warning
+
+# 备选：Gunicorn + Uvicorn Worker（更适合多进程高并发）
+# ExecStart=/opt/miniconda3/envs/fastapi_env/bin/gunicorn app.main:app \
+#     --bind 0.0.0.0:8999 \
+#     --workers 4 \
+#     --worker-class uvicorn.workers.UvicornWorker \
+#     --timeout 120 \
+#     --graceful-timeout 30 \
+#     --keep-alive 5 \
+#     --access-logfile - \
+#     --error-logfile -
+
+# ==================== 进程管理 ====================
+Type=notify
+NotifyAccess=all
+
+# 优雅关闭：先发 SIGTERM，等 30 秒处理完当前请求后再强制 SIGKILL
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# ==================== 重启策略 ====================
+Restart=on-failure
+RestartSec=5
+# 60 秒内重启超过 5 次则不再重启（防止崩溃循环）
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# ==================== 资源限制 ====================
+# 最大打开文件数（高并发场景建议调大）
+LimitNOFILE=65535
+# 最大进程数
+LimitNPROC=4096
+
+# ==================== 日志 ====================
+# 使用 journald 管理日志（推荐，可用 journalctl 查看）
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fastapi-backend
+
+# 备选：输出到独立文件
+# StandardOutput=append:/home/lighthouse/projects/fastapi-backend/logs/service_stdout.log
+# StandardError=append:/home/lighthouse/projects/fastapi-backend/logs/service_stderr.log
+
+# ==================== 安全加固（可选） ====================
+# 禁止获取新权限
+NoNewPrivileges=true
+# 保护系统目录为只读
+ProtectSystem=strict
+# 保护 /home 目录（排除工作目录）
+ProtectHome=tmpfs
+# 允许写入的目录
+ReadWritePaths=/home/lighthouse/projects/fastapi-backend/logs
+ReadWritePaths=/home/lighthouse/projects/fastapi-backend/uploads
+# 私有 /tmp 目录
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

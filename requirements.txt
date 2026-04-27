@@ -1,0 +1,60 @@
+# FastAPI 核心依赖
+fastapi~=0.135.0
+uvicorn[standard]~=0.40.0
+pydantic~=2.12.0
+pydantic-settings~=2.7.0
+email-validator~=2.1.0
+
+# 数据库相关
+sqlalchemy[asyncio]~=2.0.48
+asyncmy~=0.2.9
+pymysql~=1.1.0
+alembic~=1.18.0
+greenlet~=3.1.1
+
+# 认证和安全
+bcrypt~=5.0.0
+PyJWT[crypto]~=2.8.0
+python-multipart~=0.0.20
+
+# 配置文件支持
+python-dotenv~=1.0.0
+tomli~=2.0.1
+
+# 日志
+loguru~=0.7.0
+
+# 异步文件操作
+aiofiles~=24.1.0
+
+# 高性能 JSON
+orjson~=3.10.0
+
+# Redis 支持（缓存、分布式锁）
+redis~=7.3.0
+
+# Prometheus 监控
+prometheus_client~=0.21.0
+psutil~=6.1.0
+
+# AI 相关依赖
+openai~=2.26.0
+# litellm: 供 app/ai/providers/litellm_provider.py 使用,统一调用 Anthropic/Gemini/
+# 通义千问/智谱等 100+ 模型。体积较大,如生产环境只用 OpenAI 兼容接口可评估移除
+# 并把 LiteLLMProvider 从 app/ai/providers/__init__.py 中剔除。
+litellm~=1.60.0
+httpx~=0.28.0
+sse-starlette~=3.3.0
+tenacity~=9.0.0
+jinja2~=3.1.0
+ddgs~=9.0.0
+
+# Token 计数
+tiktoken~=0.8.0
+
+# 图片处理
+Pillow~=12.2.0
+
+# 支付宝 SDK（PAYMENT_MODE=alipay 时必须；mock 模式可不装但保留依赖避免 ImportError）
+python-alipay-sdk~=3.3.0
+

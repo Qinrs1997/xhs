@@ -1,0 +1,151 @@
+[project]
+name = "fastapi-backend"
+version = "1.0.0"
+description = "FastAPI 后端项目框架"
+requires-python = ">=3.10"
+# 运行时依赖:与 requirements.txt 保持同步(requirements.txt 仍然是部署时的真实来源,
+# 这里列出是为了让 `pip install -e .` / IDE 等工具能识别依赖关系)。
+# 修改时请同步更新两处。
+dependencies = [
+    "fastapi~=0.135.0",
+    "uvicorn[standard]~=0.40.0",
+    "pydantic~=2.12.0",
+    "pydantic-settings~=2.7.0",
+    "email-validator~=2.1.0",
+    "sqlalchemy[asyncio]~=2.0.48",
+    "asyncmy~=0.2.9",
+    "pymysql~=1.1.0",
+    "alembic~=1.18.0",
+    "greenlet~=3.1.1",
+    "bcrypt~=5.0.0",
+    "PyJWT[crypto]~=2.8.0",
+    "python-multipart~=0.0.20",
+    "python-dotenv~=1.0.0",
+    "tomli~=2.0.1",
+    "loguru~=0.7.0",
+    "aiofiles~=24.0.0",
+    "orjson~=3.10.0",
+    "redis~=7.3.0",
+    "prometheus_client~=0.21.0",
+    "psutil~=6.1.0",
+    "openai~=2.26.0",
+    "litellm~=1.60.0",
+    "httpx~=0.28.0",
+    "sse-starlette~=3.3.0",
+    "tenacity~=9.0.0",
+    "jinja2~=3.1.0",
+    "ddgs~=9.0.0",
+    "tiktoken~=0.8.0",
+    "Pillow~=12.2.0",
+    "python-alipay-sdk~=3.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=8.3.0",
+    "pytest-asyncio~=0.24.0",
+    "pytest-cov~=6.0.0",
+    "ruff~=0.8.0",
+    "mypy~=1.13.0",
+]
+
+# ==================== Ruff (Lint + Format) ====================
+# Ruff 是 Rust 实现的 Python linter + formatter
+# 速度是 flake8 的 10-100 倍，可完全替代 flake8 + isort + black
+#
+# 使用方法：
+#   ruff check .        # 检查代码问题
+#   ruff check . --fix  # 自动修复
+#   ruff format .       # 格式化代码
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+# 排除不需要检查的目录
+exclude = [
+    "alembic/versions",
+    ".git",
+    "__pycache__",
+    "venv",
+    ".venv",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort (import 排序)
+    "UP",    # pyupgrade (Python 版本升级建议)
+    "B",     # flake8-bugbear (常见 bug 模式)
+    "SIM",   # flake8-simplify (代码简化建议)
+    "N",     # pep8-naming (命名规范)
+    "ASYNC", # flake8-async (异步代码检查)
+    "S",     # flake8-bandit (安全检查)
+    "T20",   # flake8-print (禁止 print)
+    "RUF",   # ruff 专属规则
+]
+ignore = [
+    "E501",   # 行长度由 formatter 处理
+    "B008",   # Depends() 在函数参数中是 FastAPI 的标准模式
+    "S101",   # assert 在测试中是允许的
+    "S105",   # 硬编码密码检查（配置文件中的默认值）
+    "S106",   # 同上
+    "RUF012", # ClassVar 注解（与 SQLAlchemy 冲突）
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试文件允许 assert 和 print
+"tests/**/*.py" = ["S101", "T20"]
+# 迁移脚本不检查
+"alembic/**/*.py" = ["E", "W", "F", "I"]
+# 一次性维护脚本 / 手动调试脚本:允许 print / 动态 import / 简化异常处理
+"scripts/**/*.py" = ["T20", "S101", "E402", "SIM105", "SIM115", "S110", "S608"]
+"tests/manual/**/*.py" = ["T20", "S101", "E402", "SIM105", "SIM115", "S110"]
+# __init__.py 允许未使用的导入（re-export）
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ==================== MyPy (类型检查) ====================
+# 使用方法：
+#   mypy app/
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false    # 渐进式启用，先不要求所有函数都有类型注解
+check_untyped_defs = true
+ignore_missing_imports = true    # 忽略第三方库缺失的类型存根
+
+# Pydantic 插件
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# 按模块配置严格程度
+[[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+# ==================== Pytest ====================
+[tool.pytest.ini_options]
+# 仅自动收集 unit + integration；
+# tests/manual/ 是手动调试脚本（依赖外部服务，不适合 CI）需显式 python 运行
+testpaths = ["tests/unit", "tests/integration"]
+asyncio_mode = "auto"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

@@ -1,0 +1,21 @@
+# 开发环境依赖（不部署到生产环境）
+#
+# 安装方法：
+#   pip install -r requirements-dev.txt
+#
+# 注意：会自动安装 requirements.txt 中的生产依赖
+
+-r requirements.txt
+
+# 代码质量
+ruff>=0.8.0                         # Lint + Format (替代 flake8/black/isort)
+mypy>=1.14.0                        # 类型检查
+
+# 测试
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0                   # 覆盖率报告
+httpx>=0.28.0                       # 异步测试客户端（已在主依赖中）
+
+# 类型存根
+types-redis>=4.6.0

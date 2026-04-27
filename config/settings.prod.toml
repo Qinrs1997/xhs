@@ -1,0 +1,96 @@
+# ============================================================
+# 生产环境配置覆盖（settings.toml 的增量覆盖）
+# ============================================================
+# 加载逻辑: config.py#load_toml_config
+#   1. 先加载 config/settings.toml（默认值）
+#   2. 如 APP_ENV=prod，再加载本文件并深度合并（覆盖）
+#   3. 环境变量优先级最高（覆盖所有 TOML 值）
+#
+# 敏感信息（密码、密钥、API Key）仍通过 .env / 环境变量注入，
+# 本文件只放非敏感的"生产默认值"。
+# ============================================================
+
+[app]
+debug = false
+env = "prod"
+reload = false
+workers = 4
+
+# 生产环境自动关闭 OpenAPI 文档（config.py 里也会兜底）
+docs_url = ""
+redoc_url = ""
+openapi_url = ""
+
+[database]
+# 生产建议连接池加大
+pool_size = 20
+max_overflow = 40
+echo = false
+# 生产关闭启动期自动迁移,由 CI/Ops 在灰度前手工执行 `alembic upgrade head`
+# (多 worker 场景下自动迁移会并发执行、且难以回滚)
+auto_migrate = false
+
+[password]
+# 生产密码策略收紧(至少 8 位);复杂度规则目前仅 `min_length` 与 `bcrypt_rounds`
+# 已在 Settings 落地,`require_uppercase/lowercase/digit/special` 暂未实现为
+# 运行期校验,记录在此供后续 PR 落实,不能误以为已生效
+min_length = 8
+bcrypt_rounds = 12
+
+[cors]
+# ⚠️ 部署时必须改为真实域名，不能留通配
+# 建议使用环境变量 BACKEND_CORS_ORIGINS 覆盖（JSON 数组格式）
+origins = ["https://your-domain.com"]
+allow_credentials = true
+
+[logging]
+level = "WARNING"
+
+[logging.console]
+# 生产环境关闭终端彩色输出（避免日志采集器被 ANSI 码污染）
+colorize = false
+
+[cache]
+# 生产强烈建议开启 Redis（登录锁定 / 积分配置缓存 / 会话黑名单均依赖）
+enabled = true
+type = "redis"
+
+[rate_limit]
+# 生产环境开启限流，120 req/min 是典型起点
+enabled = true
+requests_per_minute = 120
+burst_size = 20
+
+[upload]
+enabled = true
+
+[security]
+# ⚠️ 部署时改为具体域名(TrustedHostMiddleware 读取,防 Host 头投毒)
+allowed_hosts = ["your-domain.com"]
+# 登录失败锁定阈值与持续时间,防暴力破解
+max_login_attempts = 5
+lockout_duration = 900  # 15 分钟
+
+[monitoring]
+# 开启 /metrics 端点给 Prometheus 采集
+metrics_enabled = true
+
+[dev_tools]
+swagger_ui_enabled = false
+redoc_enabled = false
+debug_toolbar_enabled = false
+profiler_enabled = false
+
+# ============================================================
+# 生产必填检查清单（_production_safety_check 会兜底）
+# ============================================================
+# 以下环境变量/密钥必须通过 .env 或 systemd EnvironmentFile 设置:
+#   - SECRET_KEY               （JWT 签名密钥，≥32 位随机字符串）
+#   - MYSQL_PASSWORD           （数据库密码）
+#   - REDIS_PASSWORD           （Redis 启用后必须有）
+#   - BOOTSTRAP_ADMIN_PASSWORD （≥8 位，非弱密码）
+#   - AI_API_KEY               （SiliconFlow / OpenAI API Key）
+#   - TAVILY_API_KEY           （搜索 API Key）
+#   - EMAIL_FROM + EMAIL_PASSWORD（邮件服务）
+#   - FRONTEND_URL             （支付回调、邀请链接）
+#   - 支付宝（如启用）: ALIPAY_APP_ID / ALIPAY_PRIVATE_KEY / ALIPAY_PUBLIC_KEY / ALIPAY_NOTIFY_URL / ALIPAY_RETURN_URL

@@ -1,0 +1,392 @@
+# ============================================================
+# 统一配置文件
+# ============================================================
+# 通过环境变量 APP_ENV 控制环境：dev | test | prod
+# 敏感信息通过环境变量注入，避免硬编码
+# ============================================================
+
+[app]
+name = "挽梦图文生成"
+version = "1.0.0"
+description = "小红书 AI 图文创作平台"
+host = "0.0.0.0"
+port = 8999
+api_prefix = "/api/v1"
+
+# 以下配置根据 APP_ENV 环境变量自动调整（代码中处理）
+# dev 模式：debug=true, reload=true, workers=1, docs_url="/docs"
+# prod 模式：debug=false, reload=false, workers=4, docs_url=""
+debug = true
+env = "dev"
+reload = true
+workers = 1
+docs_url = "/docs"
+redoc_url = "/redoc"
+openapi_url = "/openapi.json"
+
+# ============================================================
+# 初始化管理员（首次启动时创建）
+# ============================================================
+[bootstrap]
+admin_username = "admin"
+admin_password = ""                   # ⚠️ 通过环境变量 BOOTSTRAP_ADMIN_PASSWORD 设置
+admin_email = ""                      # ⚠️ 通过环境变量 BOOTSTRAP_ADMIN_EMAIL 设置
+admin_full_name = "Administrator"
+
+# ============================================================
+# 数据库配置
+# ============================================================
+[database]
+host = "127.0.0.1"                 # 可通过环境变量 MYSQL_HOST 覆盖
+port = 3307                        # 可通过环境变量 MYSQL_PORT 覆盖（转发端口）
+name = "xhs"                        # 可通过环境变量 MYSQL_DATABASE 覆盖
+user = "root"                       # 可通过环境变量 MYSQL_USER 覆盖
+password = ""                          # ⚠️ 必须通过环境变量 MYSQL_PASSWORD 设置
+charset = "utf8mb4"
+
+# 连接池配置
+pool_class = "queue"
+pool_size = 10                     # prod 环境建议 20
+max_overflow = 20                  # prod 环境建议 40
+pool_timeout = 30
+pool_recycle = 3600
+pool_pre_ping = true
+
+# 数据库操作配置
+echo = false
+query_timeout = 30
+connect_timeout = 10
+read_timeout = 30
+write_timeout = 30
+
+# ============================================================
+# JWT 认证配置
+# ============================================================
+[jwt]
+algorithm = "HS256"
+access_token_expire_minutes = 60     # 1 小时（prod 环境建议 30-60）
+refresh_token_expire_days = 30       # 30 天
+secret_key = ""                            # ⚠️ 生产环境务必通过环境变量 SECRET_KEY 覆盖
+
+# ============================================================
+# 密码策略
+# ============================================================
+[password]
+min_length = 6                     # prod 环境建议 8
+max_length = 50
+require_uppercase = false          # prod 环境建议 true
+require_lowercase = false          # prod 环境建议 true
+require_digit = false              # prod 环境建议 true
+require_special = false            # prod 环境建议 true
+bcrypt_rounds = 12
+max_login_attempts = 5             # 连续登录失败 5 次后锁定账户
+lockout_duration = 300             # 锁定时间（秒），默认 5 分钟
+
+# ============================================================
+# 邮件服务配置（QQ 邮箱 SMTP）
+# ============================================================
+[email]
+enabled = true
+smtp_host = "smtp.qq.com"
+smtp_port = 465
+smtp_tls = true
+from_addr = ""                             # ⚠️ 通过环境变量 EMAIL_FROM 设置（发件邮箱地址）
+from_name = "挽梦图文生成"
+password = ""                              # ⚠️ 通过环境变量 EMAIL_PASSWORD 设置（QQ邮箱授权码）
+
+# ============================================================
+# CORS 跨域配置
+# ============================================================
+[cors]
+enabled = true
+# ⚠️ 生产环境必须改为具体域名列表，如 ["https://yourdomain.com"]
+# allow_credentials=true 时不允许 origins=["*"]（浏览器规范限制）
+origins = ["http://localhost:3000", "http://localhost:5173"]
+allow_credentials = true
+allow_methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+allow_headers = ["*"]
+max_age = 3600
+
+
+# ============================================================
+# 日志配置
+# ============================================================
+[logging]
+level = "INFO"                     # prod 环境建议 WARNING
+format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+[logging.file]
+enabled = true
+path = "logs/app.log"                  # 日志目录取自此路径（按天生成 app_YYYY-MM-DD.log）
+backup_count = 30                      # 日志保留天数
+encoding = "utf-8"
+
+[logging.console]
+enabled = true
+colorize = true                    # prod 环境建议 false
+
+# 静默路由（这些路由的访问日志降级为 DEBUG，避免轮询日志刷屏）
+[logging.quiet_routes]
+paths = [
+    "/health",
+    "/health/live",
+    "/health/ready",
+    "/api/v1/scheduler/stats",
+    "/api/v1/scheduler/jobs",
+    "/api/v1/scheduler/logs",
+]
+
+# ============================================================
+# 分页配置
+# ============================================================
+[pagination]
+default_page_size = 20
+max_page_size = 100
+
+# ============================================================
+# 文件上传配置
+# ============================================================
+[upload]
+enabled = false                    # prod 环境建议 true
+max_file_size = 5242880            # 5MB
+allowed_extensions = ["jpg", "jpeg", "png", "gif", "pdf"]
+upload_dir = "uploads/"
+
+# ============================================================
+# 缓存配置
+# ============================================================
+[cache]
+enabled = false                    # prod 环境设 REDIS_ENABLED=true 或使用 settings.prod.toml 覆盖
+type = "redis"                     # 启用后支持 @cached 装饰器和 cache.set/get
+
+[cache.redis]
+host = "localhost"                 # 可通过 REDIS_HOST 覆盖
+port = 6379                        # 可通过 REDIS_PORT 覆盖
+db = 0
+password = ""                      # 可通过 REDIS_PASSWORD 覆盖
+max_connections = 10
+socket_timeout = 5
+
+[cache.ttl]
+default = 300
+short = 60
+long = 3600
+
+# ============================================================
+# 速率限制
+# ============================================================
+[rate_limit]
+enabled = false                    # prod 环境建议 true
+requests_per_minute = 60           # 每分钟最大请求数
+burst_size = 10                    # 突发请求数（令牌桶容量）
+block_seconds = 60                 # 超限后封锁时间（秒）
+
+
+
+# ============================================================
+# 定时任务
+# ============================================================
+[scheduler]
+enabled = true                     # 是否启用定时任务
+timezone = "Asia/Shanghai"
+max_instances = 3                  # 同一任务最大并发实例数
+misfire_grace_time = 60            # 错过执行的宽限时间（秒）
+
+# ============================================================
+# 外部服务
+# ============================================================
+[external_services.sms]
+enabled = false
+provider = "aliyun"
+access_key = ""
+access_secret = ""
+
+[external_services.oss]
+enabled = false
+provider = "aliyun"
+bucket = ""
+endpoint = ""
+access_key = ""
+access_secret = ""
+
+# ============================================================
+# 安全配置
+# ============================================================
+[security]
+allowed_hosts = ["*"]              # prod 环境建议配置具体域名
+
+[security.session]
+secret_key = ""                            # ⚠️ 通过环境变量 SESSION_SECRET_KEY 覆盖
+max_age = 86400
+
+[security.ip_whitelist]
+enabled = false
+ips = []
+
+# ============================================================
+# 监控配置
+# ============================================================
+[monitoring]
+health_check_path = "/health"
+metrics_enabled = false            # prod 环境建议 true
+metrics_path = "/metrics"
+
+# ============================================================
+# 开发工具
+# ============================================================
+[dev_tools]
+swagger_ui_enabled = true          # prod 环境自动关闭
+redoc_enabled = true               # prod 环境自动关闭
+debug_toolbar_enabled = false
+profiler_enabled = false
+
+# ============================================================
+# AI 服务配置
+# ============================================================
+[ai]
+enabled = true                     # AI 总开关
+default_provider = "openai"
+
+# 功能子开关
+chat_enabled = true
+summary_enabled = true
+search_enabled = true
+image_enabled = true
+xhs_enabled = true
+
+[ai.openai]
+api_key = ""                                                                       # ⚠️ 必须通过环境变量 AI_API_KEY 设置
+base_url = "https://api.siliconflow.cn/v1"                      # 可通过 AI_BASE_URL 覆盖
+timeout = 60
+max_retries = 3
+default_temperature = 0.7
+default_max_tokens = 4096
+
+[ai.openai.models]
+chat = "Pro/MiniMaxAI/MiniMax-M2.5"
+summary = "Pro/MiniMaxAI/MiniMax-M2.5"
+embedding = "text-embedding-3-small"
+image = "Qwen/Qwen-Image"
+
+available = [
+    "Pro/MiniMaxAI/MiniMax-M2.5",
+    "Pro/moonshotai/Kimi-K2.6",
+    "Pro/zai-org/GLM-5.1",
+    "Pro/zai-org/GLM-5",
+    "Pro/moonshotai/Kimi-K2.5",
+    "deepseek-ai/DeepSeek-V3.2",
+]
+
+[ai.context]
+max_messages = 20
+max_tokens = 8000
+auto_summarize = true
+storage_type = "memory"            # memory / redis / database
+
+[ai.search]
+enabled = true
+provider = "tavily"                                 # 默认搜索引擎（每月 1000 次免费）
+api_key = ""                                        # ⚠️ 通过环境变量 TAVILY_API_KEY 设置（https://tavily.com 注册获取）
+brave_api_key = ""                  # Brave Search API Key（付费，$5/月）
+max_results = 5
+rate_limit_rpm = 20                 # 搜索接口每分钟最大请求数
+providers_fallback = ["tavily", "duckduckgo", "searxng"]   # 降级链
+searxng_base_url = "http://localhost:8080"           # SearXNG 自托管地址（可选）
+
+[ai.image]
+enabled = true
+api_key = ""                                         # ⚠️ 通过环境变量 IMAGE_API_KEY 或 APIMART_API_KEY 设置
+base_url = "https://api.apimart.ai/v1"               # 可通过 IMAGE_BASE_URL 或 APIMART_BASE_URL 覆盖
+default_model = "gpt-image-2"
+default_size = "1024x1792"
+default_quality = "standard"
+
+# APIMart 异步出图轮询参数
+# 部分图片模型（如 gpt-image-2）APIMart 走异步任务：初次返回 task_id，需要再调
+# GET /v1/tasks/{task_id} 轮询拿最终图 URL。下面三个参数控制等待节奏。
+[ai.image.apimart]
+initial_delay_seconds = 10         # 下发任务后先等多久再开始轮询（APIMart 默认 10s 后才就绪）
+poll_interval_seconds = 3          # 每次轮询间隔（秒）
+task_timeout_seconds = 300         # 单次图片任务最长等待时间（秒），超时后抛 TimeoutError
+
+# ============================================================
+# batch_grid 网格合成生图模式（成本/画质 双档）
+# ============================================================
+# 模板可选两种生图模式：
+# - per_page：每页一次 API 调用（质量最佳，默认）
+# - batch_grid：按 NxM 网格分批生成大图 + 后端 Pillow 切成独立页
+#   （默认 2x2，每批最多 4 页；6 页会拆为 4+2 共 2 次 API）
+# 下面参数控制 batch_grid 模式默认行为；每个模板可在 image_grid_config JSON 覆盖。
+[ai.image.batch_grid]
+enabled = true                     # 总开关（false 时后端拒绝 batch_grid 模式 → 降级 per_page）
+default_rows = 2                   # 默认行数
+default_cols = 2                   # 默认列数
+default_cell_size = "512x896"      # 单格竖版尺寸，2x2 合成图≈9:16，切割后仍是竖版页
+split_upscale_enabled = true       # 是否对切割后的单格做高质量放大/锐化；false=严格原图 crop 切割
+split_target_cell_size = "1024x1792" # 切割落盘目标尺寸；APIMart 返回较小图时后端 2x 高质量放大保存
+max_pages_per_grid = 4             # 单批最多页数；超过时自动分批，不再直接 fallback per_page
+grid_gap_px = 16                   # 网格分隔线宽度（prompt 里描述 + Pillow 切割时留边）
+# 只有下列模型会被允许走 batch_grid（需支持 2048x2048 或更大单次输出）
+# 不在白名单的模型自动降级到 per_page
+supported_models = [
+    "gpt-image-2",
+    "flux-kontext-pro",
+    "imagen-4.0-apimart",
+    "gpt-4o-image",
+]
+blank_threshold = 0.6              # 切图后空白占比阈值；>此值认为该格生成失败
+max_pixels = 4194304               # 合成图像素上限(2048*2048=4,194,304)，超出自动降级
+
+# 可用图片模型列表（前端可获取并展示选择器）
+available_models = [
+    "gpt-image-2",
+    "imagen-4.0-apimart",
+    "flux-kontext-pro",
+    "gpt-4o-image",
+]
+
+# 缩略图处理（生成后自动下载+压缩，前端秒加载）
+thumbnail_enabled = true                                                                # 启用缩略图
+thumbnail_width = 720                                                                   # 缩略图宽度(px)
+thumbnail_quality = 82                                                                  # 缩略图质量(1-100)
+thumbnail_format = "webp"                                                               # 缩略图格式(webp/jpeg)
+persist_originals = true                                                                # 持久化原图到本地
+download_timeout = 30                                                                   # 下载远程图片超时(秒)
+
+[ai.xhs]
+max_concurrency = 5
+short_prompt_threshold = 1500
+
+# ============================================================
+# 积分策略配置
+# ============================================================
+[credits]
+register_bonus = 50                 # 注册赠送积分
+
+# 签到
+checkin_daily = 5                   # 每日签到积分
+checkin_streak_bonus = 30           # 连续7天额外奖励
+checkin_streak_cycle = 7            # 奖励周期（天）
+
+# 邀请奖励
+invite_reward = 100                 # 邀请人奖励
+invitee_reward = 20                 # 被邀请人奖励
+invite_daily_limit = 10             # 每人每天最多获得的邀请奖励次数
+
+# 各操作消耗积分
+[credits.costs]
+outline = 5                         # 生成大纲
+content = 10                        # 生成文案
+image_standard = 20                 # 标准图片
+image_hd = 40                       # 高清图片
+prompts_batch = 5                   # 批量提示词
+prompt_optimize = 3                 # 优化提示词
+chat = 2                            # AI 聊天
+image_regenerate = 20               # 重新生图
+
+[ai.prompts]
+enabled = true
+templates_dir = "app/ai/prompts/templates"
+custom_dir = "app/ai/prompts/custom"
+cache_enabled = true
+default_language = "chinese"
